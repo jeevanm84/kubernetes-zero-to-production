@@ -43,7 +43,7 @@ spec:
               app.kubernetes.io/name: web
       containers:
         - name: web
-          image: nginxinc/nginx-unprivileged:1.29.3-alpine@sha256:5aea7cc516b419e3526f47dd1531be31a56a046cfe44754d94f9383e13e2ee99
+          image: nginxinc/nginx-unprivileged:1.31.4-alpine@sha256:901e944d1f4fc2bd077e8f5568b98c1f6f8cdacf6b97a87747c43134a339b9a7
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
