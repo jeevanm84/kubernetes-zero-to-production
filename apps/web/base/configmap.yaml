@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-content
+  namespace: platform-demo
+data:
+  index.html: |
+    <!doctype html>
+    <html lang="en">
+      <head><meta charset="utf-8"><title>Kubernetes Zero to Production</title></head>
+      <body><h1>Platform deployment healthy</h1><p>Managed through Kubernetes reconciliation.</p></body>
+    </html>
+  default.conf: |
+    server {
+      listen 8080;
+      server_name _;
+      root /usr/share/nginx/html;
+      location = /healthz { access_log off; add_header Content-Type text/plain; return 200 'healthy'; }
+      location / { try_files $uri $uri/ =404; }
+    }

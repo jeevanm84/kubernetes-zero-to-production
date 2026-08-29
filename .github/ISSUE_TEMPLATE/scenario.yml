@@ -1,0 +1,30 @@
+name: Production scenario
+description: Propose a failure, reliability, security, observability, or cost exercise.
+title: "[Scenario]: "
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domain
+      options: [Workloads, Networking, Storage, Security, Observability, GitOps, Reliability, Cost, EKS architecture]
+    validations:
+      required: true
+  - type: textarea
+    id: incident
+    attributes:
+      label: Incident and user impact
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence learners should investigate
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected engineering outcome
+    validations:
+      required: true

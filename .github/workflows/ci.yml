@@ -1,0 +1,41 @@
+name: Kubernetes CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kubernetes-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate manifests and policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.37.0
+
+      - name: Run offline repository checks
+        run: ./scripts/check.sh
+
+      - name: Render overlays for schema validation
+        run: |
+          mkdir -p /tmp/rendered-manifests
+          kubectl kustomize apps/web/overlays/local > /tmp/rendered-manifests/local.yaml
+          kubectl kustomize apps/web/overlays/production-example > /tmp/rendered-manifests/production.yaml
+
+      - name: Validate Kubernetes schemas
+        run: docker run --rm -v /tmp/rendered-manifests:/manifests:ro ghcr.io/yannh/kubeconform:v0.8.0@sha256:faffaf43f95aa6425306e1ab8d6fcad72acb9049158f38e574c085ea1ec0f64e -strict -summary /manifests

@@ -1,0 +1,32 @@
+name: Lab or manifest defect
+description: Report a reproducible problem using sanitized local-cluster evidence.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Never include kubeconfig content, tokens, cloud account IDs, credentials, or production logs.
+  - type: input
+    id: version
+    attributes:
+      label: Kubernetes and kubectl versions
+    validations:
+      required: true
+  - type: input
+    id: module
+    attributes:
+      label: Lab, manifest, or document
+    validations:
+      required: true
+  - type: textarea
+    id: symptoms
+    attributes:
+      label: Symptoms and sanitized events
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true

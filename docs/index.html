@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kubernetes Master Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070b12;
+    --panel:#101823;
+    --panel-2:#141e2c;
+    --line:#233046;
+    --line-soft:#182333;
+    --text:#e7edf6;
+    --text-dim:#8fa0b8;
+    --text-faint:#586b85;
+    --k8s:#326ce8;          /* kubernetes blue */
+    --k8s-dim:#16264a;
+    --control:#7aa2ff;      /* control plane */
+    --worker:#39c5cf;       /* worker nodes */
+    --net:#a78bfa;          /* networking */
+    --storage:#f5a623;      /* storage */
+    --sec:#f76b8a;          /* security */
+    --scale:#2dd4bf;        /* scaling */
+    --obs:#e3b341;          /* observability */
+    --danger:#f85149;
+    --danger-bg:#2a1214;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:
+      radial-gradient(1100px 550px at 10% -5%, #0e1a2e 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 8%, #1a0f18 0%, transparent 55%),
+      var(--bg);
+    color:var(--text); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;}
+  code,.mono{font-family:'JetBrains Mono',monospace;}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;}
+  .wrap{max-width:1440px; margin:0 auto; padding:0 40px 90px;}
+
+  /* NAV */
+  .nav{
+    position:sticky; top:0; z-index:50; backdrop-filter:blur(10px);
+    background:rgba(7,11,18,.88); border-bottom:1px solid var(--line);
+    padding:12px 40px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;
+  }
+  .nav .brand{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13.5px; color:var(--k8s); margin-right:14px; white-space:nowrap;}
+  .nav a{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim);
+    text-decoration:none; padding:5px 9px; border-radius:6px; border:1px solid transparent;
+  }
+  .nav a:hover{border-color:var(--line); color:var(--text); background:var(--panel);}
+
+  /* HERO */
+  .hero{margin-top:36px; border:1px solid var(--line); border-radius:16px; padding:40px 44px;
+    background:linear-gradient(160deg,#101a2c 0%, #0a0f18 100%); position:relative; overflow:hidden;}
+  .hero::before{content:""; position:absolute; inset:0;
+    background-image:linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size:34px 34px; opacity:.3; mask-image:radial-gradient(ellipse at 75% 25%, black 0%, transparent 70%);}
+  .hero-inner{position:relative; z-index:1;}
+  .eyebrow{display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12.5px; letter-spacing:.06em; color:var(--k8s);
+    border:1px solid #1e3a70; background:#0d1830; padding:5px 12px; border-radius:100px; margin-bottom:20px;}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--k8s); box-shadow:0 0 8px var(--k8s);}
+  h1.title{font-size:42px; line-height:1.08; margin:0 0 10px; font-weight:700; letter-spacing:-.01em;}
+  h1.title span{color:var(--k8s);}
+  .subtitle{color:var(--text-dim); font-size:16px; max-width:760px; line-height:1.55; margin:0 0 8px;}
+  .notes-badge{
+    display:inline-flex; align-items:center; gap:7px; margin-top:16px; font-size:12.5px;
+    color:var(--worker); font-family:'JetBrains Mono',monospace; border:1px dashed #1d4d52; background:#0c1c1f;
+    padding:6px 12px; border-radius:8px;
+  }
+
+  /* PAGE HEADER */
+  .page{margin-top:64px; scroll-margin-top:64px;}
+  .page-head{display:flex; align-items:baseline; gap:14px; margin-bottom:6px; flex-wrap:wrap;}
+  .page-num{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:var(--bg); background:var(--k8s); padding:3px 10px; border-radius:6px; white-space:nowrap;}
+  .page-title{font-size:25px; font-weight:700; letter-spacing:-.01em;}
+  .page-sub{color:var(--text-faint); font-size:13.5px; margin:2px 0 22px 2px;}
+  .page-divider{height:1px; background:linear-gradient(90deg, var(--k8s-dim), transparent); margin-top:14px;}
+
+  /* SECTION SHELL (inside pages) */
+  .section{margin-top:32px;}
+  .sec-head{display:flex; align-items:baseline; gap:12px; margin-bottom:12px; flex-wrap:wrap;}
+  .sec-title{font-size:16.5px; font-weight:600;}
+  .zone-tag{font-size:10.5px; padding:2px 9px; border-radius:100px; font-family:'JetBrains Mono',monospace; border:1px solid; letter-spacing:.02em;}
+  .tag-control{color:var(--control); border-color:#25366b; background:#0d1530;}
+  .tag-worker{color:var(--worker); border-color:#1d4d52; background:#0e2226;}
+  .tag-net{color:var(--net); border-color:#3a2f6b; background:#171130;}
+  .tag-storage{color:var(--storage); border-color:#4d3b14; background:#241a0a;}
+  .tag-sec{color:var(--sec); border-color:#5e1f30; background:#22111a;}
+  .tag-scale{color:var(--scale); border-color:#134d45; background:#0a201d;}
+  .tag-obs{color:var(--obs); border-color:#4d3f14; background:#241c0a;}
+
+  /* GRID / CMD CARDS */
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:11px;}
+  .cmd{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:12px 15px;}
+  .cmd .code{font-family:'JetBrains Mono',monospace; font-size:12.8px; font-weight:500; color:#bcd3ff; background:#0c1830; display:inline-block; padding:3px 8px; border-radius:6px; margin-bottom:7px; border:1px solid #1c2f52; word-break:break-word;}
+  .cmd p{margin:0; font-size:13px; color:var(--text-dim); line-height:1.42;}
+  .cmd.danger{border-color:#5a2323; background:var(--danger-bg);}
+  .cmd.danger .code{background:#3a1213; color:#ffb4ae; border-color:#6e2626;}
+  .cmd.notecard{border-left:3px solid var(--worker);}
+
+  /* memory callout */
+  .memory{margin-top:13px; display:flex; gap:10px; align-items:flex-start; background:var(--panel-2); border:1px dashed #2a3a55; border-radius:8px; padding:10px 14px; font-size:12.8px; color:var(--text-dim); flex-wrap:wrap;}
+  .memory .m-icon{font-family:'JetBrains Mono',monospace; color:var(--k8s); font-weight:700; font-size:11px;}
+  .memory b{color:var(--text); font-family:'JetBrains Mono',monospace; font-weight:600;}
+
+  .notes-tip{margin-top:10px; font-size:12px; font-family:'JetBrains Mono',monospace; color:var(--worker); display:flex; gap:6px; align-items:center;}
+  .notes-tip .n-icon{opacity:.85;}
+
+  /* scenario / "why use this" callout */
+  .scenario{margin-top:9px; display:flex; gap:8px; align-items:flex-start; background:#0d1f1a; border:1px solid #1e4436; border-radius:8px; padding:9px 12px;}
+  .scenario .s-icon{font-size:13px; line-height:1.3;}
+  .scenario .s-body{font-size:12.3px; color:#9fd8c2; line-height:1.45;}
+  .scenario .s-body b{color:#c9f2e2; font-family:'JetBrains Mono',monospace; font-weight:600;}
+
+  /* architecture diagram box */
+  .diagram-box{margin-top:14px; background:#080d16; border:1px solid var(--line); border-radius:10px; padding:16px 20px; font-family:'JetBrains Mono',monospace; font-size:12.5px; color:#9fb3c8; overflow-x:auto; white-space:pre; line-height:1.65;}
+  .diagram-box .c{color:var(--control);}
+  .diagram-box .w{color:var(--worker);}
+  .diagram-box .n{color:var(--net);}
+  .diagram-box .s{color:var(--storage);}
+  .diagram-box .sc{color:var(--scale);}
+  .diagram-box .hi{color:var(--k8s); font-weight:600;}
+
+  .warn-banner{margin-top:14px; border:1px solid #5a2323; background:var(--danger-bg); border-radius:10px; padding:13px 17px; display:flex; gap:11px; align-items:flex-start;}
+  .warn-banner .wsym{font-size:19px;}
+  .warn-banner .wtext{font-size:13px; color:#f2b8b5;}
+  .warn-banner .wtext b{color:var(--danger); font-family:'JetBrains Mono',monospace;}
+
+  /* vertical flow */
+  .flow-vert{display:flex; flex-direction:column; gap:0; max-width:600px;}
+  .flow-step{background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:10px 15px; font-family:'JetBrains Mono',monospace; font-size:13px;}
+  .flow-step.hi{border-color:#1c2f52; background:#0c1830; color:#bcd3ff;}
+  .flow-step.plain{font-family:'Inter',sans-serif; color:var(--text-dim); font-style:italic;}
+  .flow-arrow-v{text-align:center; color:var(--text-faint); font-size:15px; padding:2px 0;}
+
+  /* horizontal chip flow */
+  .chip-flow{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:'JetBrains Mono',monospace; font-size:12.5px;}
+  .chip-flow .chip{background:var(--panel-2); border:1px solid var(--line); padding:5px 11px; border-radius:7px; color:var(--text-dim);}
+  .chip-flow .chip.hi{border-color:#1c2f52; background:#0c1830; color:#bcd3ff;}
+  .chip-flow .arr{color:var(--text-faint);}
+
+  /* comparison cards (deployment strategies etc) */
+  .compare{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin-top:12px;}
+  .ccard{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
+  .ccard h4{margin:0 0 8px; font-size:13px; font-family:'JetBrains Mono',monospace; letter-spacing:.03em; color:var(--k8s);}
+  .ccard .cvis{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); white-space:pre-line; line-height:1.55;}
+
+  /* failure table */
+  .fail-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:10px; margin-top:6px;}
+  .fail{background:var(--panel); border:1px solid #3a2740; border-radius:9px; padding:11px 15px;}
+  .fail .fname{font-family:'JetBrains Mono',monospace; font-size:12.8px; color:#ffd479; font-weight:600; margin-bottom:4px;}
+  .fail p{margin:0; font-size:12.5px; color:var(--text-dim);}
+
+  /* golden strip */
+  .golden{margin-top:16px; background:var(--k8s-dim); border:1px solid #2a4a8f; border-radius:12px; padding:22px 26px; text-align:center;}
+  .golden .chain{font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#bcd3ff; letter-spacing:.02em; flex-wrap:wrap; display:flex; justify-content:center; gap:10px;}
+  .golden .chain .arr{color:var(--text-faint); font-weight:400;}
+
+  .kv-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:8px; margin-top:12px;}
+  .kv{font-family:'JetBrains Mono',monospace; font-size:12.3px; background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:8px 12px; color:var(--text-dim);}
+  .kv b{color:var(--k8s);}
+
+  .legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:20px; font-size:11.5px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;}
+  .legend .li{display:flex; align-items:center; gap:6px;}
+  .legend .sw{width:10px; height:10px; border-radius:3px;}
+
+  .final{margin-top:60px; border:1px solid var(--line); border-radius:16px; padding:38px 44px; background:linear-gradient(160deg,#0d1830 0%, #0a0f18 70%); text-align:center;}
+  .final blockquote{font-family:'Space Grotesk',sans-serif; font-size:21px; font-weight:600; margin:0 0 20px; line-height:1.4;}
+  .final blockquote span{color:var(--k8s);}
+
+  footer{text-align:center; color:var(--text-faint); font-size:12px; margin-top:56px; font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <span class="brand">⎈ K8S MASTER MAP</span>
+  <a href="#p1">01 Architecture</a><a href="#p2">02 kubectl</a><a href="#p3">03 Workloads</a>
+  <a href="#p4">04 Networking</a><a href="#p5">05 Storage</a><a href="#p6">06 Scaling</a>
+  <a href="#p7">07 Security</a><a href="#p8">08 GitOps/EKS</a><a href="#p9">09 Troubleshoot</a><a href="#p10">10 Revision</a>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow"><span class="dot"></span>KUBERNETES REFERENCE · SENIOR DEVOPS / SRE INTERVIEW &amp; PROD OPS</div>
+      <h1 class="title">KUBERNETES <span>MASTER MAP</span></h1>
+      <p class="subtitle">Architecture, Objects, Commands &amp; Troubleshooting — mapped by WHERE each piece sits and WHAT problem it solves, from <code class="mono">kubectl</code> down to the container runtime and back up through Ingress to the user.</p>
+      <div class="notes-badge">✓ cross-checked against your K8S_INTERVIEW_NOTES — kOps/AWS builds, Minikube, HAProxy &amp; ALB Ingress, Kyverno, HPA/VPA/KEDA, StatefulSet full-stack project, sidecars, Vault, K8sGPT/Kustomize/ArgoCD/Kubecost</div>
+      <div class="legend">
+        <div class="li"><span class="sw" style="background:var(--control)"></span>Control Plane</div>
+        <div class="li"><span class="sw" style="background:var(--worker)"></span>Worker / Workload</div>
+        <div class="li"><span class="sw" style="background:var(--net)"></span>Networking</div>
+        <div class="li"><span class="sw" style="background:var(--storage)"></span>Storage</div>
+        <div class="li"><span class="sw" style="background:var(--sec)"></span>Security</div>
+        <div class="li"><span class="sw" style="background:var(--scale)"></span>Scaling</div>
+        <div class="li"><span class="sw" style="background:var(--obs)"></span>Observability</div>
+        <div class="li"><span class="sw" style="background:var(--danger)"></span>Destructive</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 1 — ARCHITECTURE & CORE OBJECTS
+  ========================================================== -->
+  <div class="page" id="p1">
+    <div class="page-head"><span class="page-num">PAGE 01</span><span class="page-title">Kubernetes Architecture &amp; Core Objects</span></div>
+    <p class="page-sub">Where every request and every Pod actually lives.</p>
+    <div class="page-divider"></div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">1 · The Big Picture</span></div>
+      <div class="diagram-box">                     <span class="hi">KUBERNETES CLUSTER</span>
+                            │
+           ┌────────────────┴────────────────┐
+           │                                  │
+    <span class="c">CONTROL PLANE</span>                        <span class="w">WORKER NODES</span>
+           │                                  │
+    <span class="c">API Server</span>                             <span class="w">kubelet</span>
+    <span class="c">etcd</span>                                   <span class="w">kube-proxy</span>
+    <span class="c">Scheduler</span>                              <span class="w">Container Runtime</span>
+    <span class="c">Controller Manager</span>                         │
+                                              ↓
+                                            <span class="hi">Pods</span></div>
+      <div class="memory"><span class="m-icon">MEM</span>
+        <b>API Server</b>=front door&nbsp; <b>etcd</b>=cluster database&nbsp; <b>Scheduler</b>=where should Pod run?&nbsp; <b>Controller</b>=keep desired state&nbsp; <b>kubelet</b>=run Pods on node&nbsp; <b>kube-proxy</b>=Service networking
+      </div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: kOps builds this exact control-plane/worker split on raw EC2 — one control-plane ASG + one node ASG per cluster, state stored in an S3 bucket.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">2 · Namespaces</span><span class="zone-tag tag-control">logical isolation</span></div>
+      <div class="grid">
+        <div class="cmd"><span class="code">kubectl get namespaces</span><p>List namespaces.</p></div>
+        <div class="cmd"><span class="code">kubectl create namespace dev</span><p>Create a namespace.</p></div>
+        <div class="cmd"><span class="code">kubectl get pods -n dev</span><p>List Pods inside a namespace.</p></div>
+        <div class="cmd notecard"><span class="code">kubectl config set-context --current --namespace=dev</span><p>Set the default namespace for your context.</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Namespace</b> = logical isolation</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">3 · Pods</span><span class="zone-tag tag-worker">smallest unit</span></div>
+      <div class="diagram-box">Container
+    ↓
+   <span class="hi">POD</span>
+    ↓
+   Node</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">kubectl get pods</span><p>List Pods.</p></div>
+        <div class="cmd"><span class="code">kubectl get pods -o wide</span><p>Pod + Node + IP.</p></div>
+        <div class="cmd"><span class="code">kubectl describe pod &lt;pod&gt;</span><p>Pod details and events.</p></div>
+        <div class="cmd"><span class="code">kubectl logs &lt;pod&gt;</span><p>Container logs.</p></div>
+        <div class="cmd"><span class="code">kubectl logs -f &lt;pod&gt;</span><p>Follow logs live.</p></div>
+        <div class="cmd"><span class="code">kubectl logs &lt;pod&gt; -c &lt;container&gt;</span><p>Logs of one container in a multi-container Pod.</p></div>
+        <div class="cmd"><span class="code">kubectl exec -it &lt;pod&gt; -- /bin/sh</span><p>Enter a running container.</p></div>
+        <div class="cmd danger"><span class="code">kubectl delete pod &lt;pod&gt;</span><p>Delete the Pod — a Deployment/ReplicaSet will recreate it.</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>GET</b>=what exists?&nbsp; <b>DESCRIBE</b>=why?&nbsp; <b>LOGS</b>=what happened?&nbsp; <b>EXEC</b>=go inside</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">4 · ReplicaSet &amp; Deployment Hierarchy</span><span class="zone-tag tag-worker">desired state</span></div>
+      <div class="diagram-box"><span class="hi">Deployment</span>
+     ↓ manages
+<span class="c">ReplicaSet</span>
+     ↓ manages
+<span class="w">Pods</span>
+ ├── Pod
+ ├── Pod
+ └── Pod</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">kubectl get deployments</span><p>List Deployments.</p></div>
+        <div class="cmd"><span class="code">kubectl create deployment nginx --image=nginx</span><p>Create a Deployment imperatively.</p></div>
+        <div class="cmd"><span class="code">kubectl scale deployment nginx --replicas=5</span><p>Change the Pod count.</p></div>
+        <div class="cmd"><span class="code">kubectl rollout status deployment/nginx</span><p>Watch a rollout progress.</p></div>
+        <div class="cmd"><span class="code">kubectl rollout history deployment/nginx</span><p>See past revisions.</p></div>
+        <div class="cmd"><span class="code">kubectl rollout undo deployment/nginx</span><p>Roll back to the previous revision.</p></div>
+        <div class="cmd"><span class="code">kubectl rollout restart deployment/nginx</span><p>Recreate all Pods (e.g. to pick up a Secret change).</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Deployment</b>=desired app state&nbsp; <b>ReplicaSet</b>=maintain Pod count&nbsp; <b>SCALE</b>=change quantity&nbsp; <b>ROLLOUT</b>=deployment lifecycle&nbsp; <b>UNDO</b>=previous version</div>
+      <div class="scenario"><span class="s-icon">💡</span><div class="s-body"><b>Why:</b> any stateless service where Pods are interchangeable — an nginx frontend, a Node.js API. If a Pod dies, any replacement is fine; you scale by adding identical copies and roll out new versions without touching storage or identity.</div></div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 14th-July deployment practice + the ReplicaSet/Minikube drills build exactly this chain by hand before automating it with a Deployment.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">5 · YAML / Declarative Management</span><span class="zone-tag tag-control">source of truth</span></div>
+      <div class="grid">
+        <div class="cmd"><span class="code">apiVersion / kind / metadata / spec</span><p>The four required top-level fields of any manifest.</p></div>
+        <div class="cmd"><span class="code">kubectl apply -f app.yaml</span><p>Create or update — the desired-state way.</p></div>
+        <div class="cmd"><span class="code">kubectl create -f app.yaml</span><p>Create only (fails if it already exists).</p></div>
+        <div class="cmd danger"><span class="code">kubectl delete -f app.yaml</span><p>Delete everything defined in the file.</p></div>
+        <div class="cmd"><span class="code">kubectl get deployment nginx -o yaml</span><p>View the live object as YAML.</p></div>
+        <div class="cmd"><span class="code">kubectl edit deployment nginx</span><p>Live-edit a running resource.</p></div>
+        <div class="cmd"><span class="code">kubectl explain deployment</span><p>Built-in field documentation.</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>apiVersion</b>=API&nbsp; <b>kind</b>=object type&nbsp; <b>metadata</b>=identity&nbsp; <b>spec</b>=desired state&nbsp; · <b>APPLY</b>=desired state</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">34 · Reconciliation — the concept underneath everything</span><span class="zone-tag tag-control">core loop</span></div>
+      <div class="diagram-box"><span class="c">YAML Desired State</span>
+       ↓
+<span class="c">API Server</span>  →  <span class="c">etcd</span>  →  <span class="hi">Controller</span>
+       ↓
+   Compare  <span class="w">Desired</span>  vs  <span class="w">Actual</span>
+       ↓
+   Different?  ── YES →  take corrective action  →  Actual = Desired</div>
+      <div class="memory"><span class="m-icon">MEM</span>Kubernetes is continuously asking: <b>"Is actual state equal to desired state?"</b></div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 16th-July Reconciliation session — this loop is why <b class="mono">kubectl delete pod</b> "just comes back": the Deployment controller reconciles Pod count back to spec.</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 2 — KUBECTL COMMAND MASTER MAP
+  ========================================================== -->
+  <div class="page" id="p2">
+    <div class="page-head"><span class="page-num">PAGE 02</span><span class="page-title">kubectl Command Master Map</span></div>
+    <p class="page-sub">One verb-resource grammar drives everything below.</p>
+    <div class="page-divider"></div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Command anatomy</span></div>
+      <div class="diagram-box">kubectl &lt;verb&gt; &lt;resource&gt; &lt;name&gt; &lt;flags&gt;
+
+Example:  kubectl get pods -n production
+            │       │          │
+          VERB   RESOURCE   NAMESPACE = production</div>
+      <div class="memory"><span class="m-icon">MEM</span><b>kubectl</b> = talk to the Kubernetes API</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Cluster information</span><span class="zone-tag tag-control">control plane</span></div>
+      <div class="grid">
+        <div class="cmd"><span class="code">kubectl cluster-info</span><p>Cluster endpoints.</p></div>
+        <div class="cmd"><span class="code">kubectl get nodes</span><p>List worker nodes.</p></div>
+        <div class="cmd"><span class="code">kubectl get nodes -o wide</span><p>Detailed node information.</p></div>
+        <div class="cmd"><span class="code">kubectl describe node &lt;node&gt;</span><p>Investigate a specific node.</p></div>
+        <div class="cmd"><span class="code">kubectl api-resources</span><p>Every resource type the API server knows.</p></div>
+        <div class="cmd"><span class="code">kubectl version</span><p>Client and server versions.</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>GET</b>=show&nbsp; <b>DESCRIBE</b>=explain</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Debug / "get me everything" commands</span><span class="zone-tag tag-obs">daily driver</span></div>
+      <div class="grid">
+        <div class="cmd"><span class="code">kubectl get all</span><p>All common resources in the current namespace.</p></div>
+        <div class="cmd"><span class="code">kubectl get pods -A</span><p>Pods across all namespaces.</p></div>
+        <div class="cmd"><span class="code">kubectl logs --previous &lt;pod&gt;</span><p>Logs from the last crashed container instance.</p></div>
+        <div class="cmd"><span class="code">kubectl top pod / kubectl top node</span><p>Live CPU/memory usage.</p></div>
+        <div class="cmd"><span class="code">kubectl get endpoints</span><p>Actual Pod IPs a Service is routing to.</p></div>
+        <div class="cmd"><span class="code">kubectl get pv,pvc</span><p>Storage objects together.</p></div>
+        <div class="cmd"><span class="code">kubectl get deployment,rs,pods</span><p>Whole workload hierarchy in one call.</p></div>
+      </div>
+    </div>
+
+    <div class="golden">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); letter-spacing:.1em; margin-bottom:10px;">GOLDEN KUBECTL MEMORY COMMANDS</div>
+      <div class="kv-grid" style="text-align:left;">
+        <div class="kv"><b>GET</b> — what exists?</div>
+        <div class="kv"><b>DESCRIBE</b> — why is it behaving this way?</div>
+        <div class="kv"><b>LOGS</b> — what did the app say?</div>
+        <div class="kv"><b>EXEC</b> — enter the container</div>
+        <div class="kv"><b>APPLY</b> — make desired state happen</div>
+        <div class="kv"><b>DELETE</b> — remove a resource</div>
+        <div class="kv"><b>EDIT</b> — modify a live resource</div>
+        <div class="kv"><b>SCALE</b> — change replicas</div>
+        <div class="kv"><b>ROLLOUT</b> — manage deployment version</div>
+        <div class="kv"><b>TOP</b> — resource usage</div>
+        <div class="kv"><b>EVENTS</b> — what happened in the cluster?</div>
+        <div class="kv"><b>EXPLAIN</b> — built-in documentation</div>
+        <div class="kv"><b>AUTH CAN-I</b> — check permissions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 3 — WORKLOADS & DEPLOYMENT STRATEGIES
+  ========================================================== -->
+  <div class="page" id="p3">
+    <div class="page-head"><span class="page-num">PAGE 03</span><span class="page-title">Workloads &amp; Deployment Strategies</span></div>
+    <p class="page-sub">Choosing the right controller, and rolling out changes safely.</p>
+    <div class="page-divider"></div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">StatefulSet vs Deployment</span><span class="zone-tag tag-worker">identity matters</span></div>
+      <div class="diagram-box"><span class="hi">StatefulSet</span>
+     ↓
+mysql-0  mysql-1  mysql-2      ← each gets: stable name · stable DNS · stable storage</div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Deployment</b> = replaceable Pods (stateless)&nbsp; · &nbsp;<b>StatefulSet</b> = identity matters (databases)</div>
+      <div class="scenario"><span class="s-icon">💡</span><div class="s-body"><b>Why:</b> a MySQL cluster where <b class="mono">mysql-0</b> is the primary and <b class="mono">mysql-1/2</b> are replicas — each Pod must keep the same name, network identity, and disk across restarts, or replication breaks. A Deployment would recreate Pods with random names and no guarantee of the same storage.</div></div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 25th-July full-stack project — nginx + Node.js frontend/backend Deployments in front of a MySQL StatefulSet, exactly this split.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">DaemonSet</span><span class="zone-tag tag-worker">one per node</span></div>
+      <div class="diagram-box">Node 1 → Monitoring Pod
+Node 2 → Monitoring Pod
+Node 3 → Monitoring Pod</div>
+      <div class="grid" style="margin-top:12px;"><div class="cmd"><span class="code">kubectl get daemonsets</span><p>List DaemonSets.</p></div></div>
+      <div class="memory"><span class="m-icon">MEM</span><b>DaemonSet</b> = every node needs one — log collectors, monitoring agents, security agents</div>
+      <div class="scenario"><span class="s-icon">💡</span><div class="s-body"><b>Why:</b> you want a Fluentd or node-exporter Pod on <i>every</i> node automatically, including new nodes the Cluster Autoscaler adds later — a Deployment with a fixed replica count can't guarantee "exactly one per node."</div></div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Job &amp; CronJob</span><span class="zone-tag tag-worker">run-to-completion</span></div>
+      <div class="grid">
+        <div class="cmd"><span class="code">kubectl get jobs</span><p>Run a task until completion.</p></div>
+        <div class="cmd"><span class="code">kubectl get cronjobs</span><p>Run a task on a schedule.</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Deployment</b>=keep running&nbsp; <b>Job</b>=run once&nbsp; <b>CronJob</b>=run repeatedly on schedule</div>
+      <div class="scenario"><span class="s-icon">💡</span><div class="s-body"><b>Why:</b> a one-off database migration script → <b class="mono">Job</b> (runs to completion, then stops). A nightly backup of that same database → <b class="mono">CronJob</b> (same idea, on a schedule). Neither should be a Deployment — you don't want it restarting forever.</div></div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Probes</span><span class="zone-tag tag-worker">health checks</span></div>
+      <div class="diagram-box">Container starts
+      ↓
+<span class="hi">Startup Probe</span>   → has the app started?
+      ↓
+<span class="hi">Readiness Probe</span> → can it receive traffic?
+      ↓
+   Receive Traffic
+      ↓
+<span class="hi">Liveness Probe</span>  → continuously: is it still alive?</div>
+      <div class="memory"><span class="m-icon">MEM</span><b>STARTUP</b>=started?&nbsp; <b>READINESS</b>=traffic?&nbsp; <b>LIVENESS</b>=alive?</div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 20th-July session paired Headless Services with Probes — readiness gates matter most for StatefulSet Pods behind a headless Service.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Resource Management</span><span class="zone-tag tag-scale">scheduling input</span></div>
+      <div class="diagram-box">resources:
+  requests:      ← scheduler reservation
+    cpu:
+    memory:
+  limits:        ← maximum allowed
+    cpu:
+    memory:</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">ResourceQuota</span><p>Caps total resource use per namespace.</p></div>
+        <div class="cmd"><span class="code">LimitRange</span><p>Sets default/min/max per Pod or container.</p></div>
+        <div class="cmd"><span class="code">kubectl top pods / kubectl top nodes</span><p>See current usage against those limits.</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>REQUEST</b> = scheduler reservation&nbsp; · &nbsp;<b>LIMIT</b> = maximum allowed</div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 24th-July ResourceQuota + PV/PVC session ties quota enforcement directly to the storage requests below.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Sidecar &amp; Init Containers</span><span class="zone-tag tag-worker">pod composition</span></div>
+      <div class="diagram-box">┌─────────────────────────┐
+│ POD                     │
+│  Init Container          │
+│        ↓                 │
+│  Main App + Sidecar       │
+└─────────────────────────┘</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">Init Container</span><p>Runs before the app — setup, config, dependencies.</p></div>
+        <div class="cmd"><span class="code">Sidecar</span><p>Runs alongside the app — logging, proxy, monitoring.</p></div>
+      </div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 27th-July sidecar + init-container + NetworkPolicies practice — sidecars are also where you enforce east-west traffic rules.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Deployment Strategies</span><span class="zone-tag tag-worker">rollout patterns</span></div>
+      <div class="compare">
+        <div class="ccard"><h4>RECREATE</h4><div class="cvis">Old → STOP → New
+(brief downtime)</div></div>
+        <div class="ccard"><h4>ROLLING UPDATE</h4><div class="cvis">V1 V1 V1
+V1 V1 V2
+V1 V2 V2
+V2 V2 V2  (default)</div></div>
+        <div class="ccard"><h4>BLUE / GREEN</h4><div class="cvis">Blue V1 ← current traffic
+Green V2 ← new version
+switch: Blue → Green</div></div>
+        <div class="ccard"><h4>CANARY</h4><div class="cvis">90% → Stable
+10% → New
+gradually increase</div></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Rolling</b>=gradual replacement&nbsp; <b>Blue/Green</b>=environment switch&nbsp; <b>Canary</b>=small traffic test</div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 28th-July Pod Scheduling + Blue/Green Deployment practice.</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 4 — NETWORKING & INGRESS
+  ========================================================== -->
+  <div class="page" id="p4">
+    <div class="page-head"><span class="page-num">PAGE 04</span><span class="page-title">Networking &amp; Ingress</span></div>
+    <p class="page-sub">How a request finds a Pod — and how Pods are kept apart.</p>
+    <div class="page-divider"></div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Services</span><span class="zone-tag tag-net">stable endpoint</span></div>
+      <div class="diagram-box">Users
+  ↓
+<span class="hi">Service</span>   ← stable network endpoint for dynamic Pods
+  ↓
+Pods</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">ClusterIP</span><p>Internal-only communication (default).</p></div>
+        <div class="cmd"><span class="code">NodePort</span><p>Reachable at NodeIP:Port.</p></div>
+        <div class="cmd"><span class="code">LoadBalancer</span><p>Provisions an external cloud load balancer.</p></div>
+        <div class="cmd"><span class="code">ExternalName</span><p>DNS alias to an outside service.</p></div>
+        <div class="cmd notecard"><span class="code">Headless (clusterIP: None)</span><p>Direct Pod DNS — used for StatefulSet discovery.</p></div>
+        <div class="cmd"><span class="code">kubectl expose deployment nginx --port=80 --type=ClusterIP</span><p>Create a Service from an existing Deployment.</p></div>
+      </div>
+      <div class="scenario"><span class="s-icon">💡</span><div class="s-body">
+        <b>ClusterIP:</b> your backend API only needs to be reachable by the frontend Pods inside the cluster — no outside access at all.<br>
+        <b>NodePort:</b> quick manual test on a dev cluster, hitting <b class="mono">&lt;NodeIP&gt;:30080</b> before you've set up a load balancer.<br>
+        <b>LoadBalancer:</b> a production app on EKS that the public internet needs to reach — provisions an actual AWS ELB.<br>
+        <b>Headless:</b> your MySQL StatefulSet Pods need individually addressable DNS names (<b class="mono">mysql-0.mysql</b>) for replication, not one shared IP.
+      </div></div>
+      <div class="grid" style="margin-top:9px;">
+        <div class="cmd"><span class="code">kubectl get svc</span><p>List Services.</p></div>
+        <div class="cmd"><span class="code">kubectl describe svc &lt;service&gt;</span><p>Inspect selector, ports, endpoints.</p></div>
+      </div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 18th &amp; 20th July — dedicated Headless Service sessions, the piece most people skip until a StatefulSet needs it.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Ingress</span><span class="zone-tag tag-net">HTTP/HTTPS routing</span></div>
+      <div class="diagram-box">Internet → DNS → Cloud Load Balancer
+        ↓
+<span class="hi">Ingress Controller</span>  (NGINX · HAProxy · AWS LB Controller)
+        ↓
+Ingress Rules  →  Service  →  Pods
+
+AWS path:  ALB  +  ACM (TLS cert)  →  AWS Load Balancer Controller  →  Ingress</div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Service</b> = expose the application&nbsp; · &nbsp;<b>Ingress</b> = HTTP/HTTPS routing on top of it</div>
+      <div class="scenario"><span class="s-icon">💡</span><div class="s-body"><b>Why:</b> you have <b class="mono">api.example.com</b> and <b class="mono">app.example.com</b> both needing TLS, but you don't want a separate cloud load balancer (and its cost) per app. One Ingress + one ALB routes by hostname/path to the right Service, and ACM handles the certificate centrally.</div></div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 21st-July — both the HAProxy Ingress practice and the ACM/ALB Ingress-controller project (with the http-project diagram) are covered here.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">ConfigMap &amp; Secret</span><span class="zone-tag tag-net">app config</span></div>
+      <div class="diagram-box">ConfigMap ──→ Pod    (non-sensitive configuration)
+Secret    ──→ Pod    (passwords / tokens / credentials)</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">kubectl create configmap app-config --from-literal=ENV=production</span><p>Create a ConfigMap.</p></div>
+        <div class="cmd"><span class="code">kubectl create secret generic db-secret --from-literal=password=xxx</span><p>Create a Secret.</p></div>
+        <div class="cmd"><span class="code">kubectl get configmaps</span><p>List ConfigMaps.</p></div>
+        <div class="cmd"><span class="code">kubectl get secrets</span><p>List Secrets.</p></div>
+      </div>
+      <div class="warn-banner"><span class="wsym">⚠</span><div class="wtext">Secrets are base64-encoded, not encrypted, by default. Enable encryption-at-rest / an external secrets store for anything real — never commit literal values to Git.</div></div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 25th-July ConfigMaps &amp; Secrets session.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Network Policies</span><span class="zone-tag tag-sec">pod firewall</span></div>
+      <div class="diagram-box">Frontend
+   ↓ allowed
+Backend
+   ↓ allowed
+Database          (all other traffic blocked)</div>
+      <div class="memory"><span class="m-icon">MEM</span><b>NetworkPolicy</b> = Pod firewall — Ingress rules and Egress rules</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 5 — STORAGE & STATEFUL WORKLOADS
+  ========================================================== -->
+  <div class="page" id="p5">
+    <div class="page-head"><span class="page-num">PAGE 05</span><span class="page-title">Storage &amp; Stateful Workloads</span></div>
+    <p class="page-sub">From a raw disk to a mounted volume inside a Pod.</p>
+    <div class="page-divider"></div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">PV / PVC chain</span><span class="zone-tag tag-storage">storage binding</span></div>
+      <div class="diagram-box">Physical / Cloud Storage
+        ↓
+<span class="s">PersistentVolume (PV)</span>       ← storage resource
+        ↓
+<span class="s">PersistentVolumeClaim (PVC)</span>  ← storage request
+        ↓
+      Pod
+
+Dynamic provisioning:
+<span class="s">StorageClass</span> → Dynamic Provisioning → PV → PVC</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">kubectl get pv</span><p>List PersistentVolumes.</p></div>
+        <div class="cmd"><span class="code">kubectl get pvc</span><p>List PersistentVolumeClaims.</p></div>
+        <div class="cmd"><span class="code">kubectl get storageclass</span><p>List StorageClasses.</p></div>
+        <div class="cmd"><span class="code">kubectl describe pvc &lt;name&gt;</span><p>Why is a PVC stuck Pending?</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>PV</b>=storage resource&nbsp; <b>PVC</b>=storage request&nbsp; <b>StorageClass</b>=how storage gets created</div>
+      <div class="scenario"><span class="s-icon">💡</span><div class="s-body"><b>Why:</b> your MySQL StatefulSet Pod gets rescheduled to a different node after a crash — without a PVC bound to a PV, its data disk would be gone. The PVC claims storage on the Pod's behalf; a StorageClass means you never had to hand-create the PV — EBS just provisions it on demand when the claim is made.</div></div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 24th-July had two back-to-back PV/PVC sessions plus the ResourceQuota pairing — this is clearly a weak-spot-turned-strength worth a confident walkthrough.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">EKS storage path (production)</span><span class="zone-tag tag-storage">AWS</span></div>
+      <div class="diagram-box">Pod → PVC → StorageClass → EBS CSI Driver → EBS Volume</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 6 — SCHEDULING & AUTOSCALING
+  ========================================================== -->
+  <div class="page" id="p6">
+    <div class="page-head"><span class="page-num">PAGE 06</span><span class="page-title">Scheduling &amp; Autoscaling</span></div>
+    <p class="page-sub">Deciding which node a Pod runs on, and how many Pods exist.</p>
+    <div class="page-divider"></div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Pod Scheduling</span><span class="zone-tag tag-scale">placement rules</span></div>
+      <div class="diagram-box">Scheduler
+   ↓
+Requests / resources
+   ↓
+Affinity rules
+   ↓
+Taints / Tolerations
+   ↓
+Select Node</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">nodeSelector</span><p>Simple key/value node selection.</p></div>
+        <div class="cmd"><span class="code">Node Affinity</span><p>Richer, weighted node-matching rules.</p></div>
+        <div class="cmd"><span class="code">Pod Affinity</span><p>Attraction — co-locate related Pods.</p></div>
+        <div class="cmd"><span class="code">Pod Anti-Affinity</span><p>Keep replicas apart across nodes/zones.</p></div>
+        <div class="cmd"><span class="code">Taints</span><p>Node rejects Pods unless tolerated.</p></div>
+        <div class="cmd"><span class="code">Tolerations</span><p>Pod is allowed onto a tainted node.</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Affinity</b>=attraction&nbsp; <b>Anti-Affinity</b>=keep apart&nbsp; <b>Taint</b>=node rejects&nbsp; <b>Toleration</b>=Pod allowed anyway</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Autoscaling</span><span class="zone-tag tag-scale">elastic capacity</span></div>
+      <div class="diagram-box">Metrics Server
+      ↓
+     <span class="hi">HPA</span>
+      ↓
+Deployment
+      ↓
+More / Fewer Pods</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">HPA</span><p>Horizontal Pod Autoscaler — more/fewer Pods.</p></div>
+        <div class="cmd"><span class="code">VPA</span><p>Vertical — resizes CPU/memory per Pod.</p></div>
+        <div class="cmd"><span class="code">Cluster Autoscaler</span><p>Adds/removes worker nodes.</p></div>
+        <div class="cmd notecard"><span class="code">KEDA</span><p>Event-driven scaling (queue depth, custom metrics).</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>HPA</b>=more Pods&nbsp; <b>VPA</b>=bigger/smaller Pods&nbsp; <b>Cluster Autoscaler</b>=more Nodes&nbsp; <b>KEDA</b>=scale from events</div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 23rd-July Metrics Server → HPA → VPA → CRDs → KEDA, in that build order — good sequence to explain it in an interview too.</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 7 — SECURITY, RBAC & ADMISSION CONTROL
+  ========================================================== -->
+  <div class="page" id="p7">
+    <div class="page-head"><span class="page-num">PAGE 07</span><span class="page-title">Security, RBAC &amp; Admission Control</span></div>
+    <p class="page-sub">Who can do what, and who checks the request before etcd ever sees it.</p>
+    <div class="page-divider"></div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">RBAC</span><span class="zone-tag tag-sec">authorization</span></div>
+      <div class="diagram-box">User / ServiceAccount
+        ↓
+Role / ClusterRole            ← what can you do?
+        ↓
+RoleBinding / ClusterRoleBinding  ← who gets the role?
+        ↓
+API permissions</div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="cmd"><span class="code">kubectl get roles</span><p>List Roles.</p></div>
+        <div class="cmd"><span class="code">kubectl get rolebindings</span><p>List RoleBindings.</p></div>
+        <div class="cmd"><span class="code">kubectl auth can-i get pods</span><p>Check your own permissions.</p></div>
+        <div class="cmd"><span class="code">kubectl auth can-i delete pods --as=&lt;user&gt;</span><p>Check permissions as another user.</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Role</b>=what can you do?&nbsp; <b>RoleBinding</b>=who gets the role?</div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 16th-July users/RBAC + RoleBinding practice sessions.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Admission Control</span><span class="zone-tag tag-sec">request lifecycle</span></div>
+      <div class="diagram-box">kubectl
+   ↓
+API Server
+   ↓
+Authentication   ← who are you?
+   ↓
+Authorization    ← what can you do?
+   ↓
+<span class="hi">Admission Controller</span>  ← should this request be allowed?
+   ↓
+Validation / Mutation  (Kyverno · OPA/Gatekeeper)
+   ↓
+etcd</div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Authentication</b>=who are you?&nbsp; <b>Authorization</b>=what can you do?&nbsp; <b>Admission</b>=should this be allowed?</div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 22nd-July — two sessions on Kyverno admission control, including a hands-on PRACTICE file. Good one to lead with in an interview.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Secrets Management — Vault</span><span class="zone-tag tag-sec">external secrets</span></div>
+      <div class="diagram-box">Vault
+ ↓
+Kubernetes Authentication
+ ↓
+Secret Injection
+ ↓
+Pod</div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Vault</b> = centralized secrets management</div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 29th-July HashiCorp Vault Kubernetes-auth integration — the production alternative to raw K8s Secrets from Page 04.</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 8 — MONITORING, GITOPS & PRODUCTION EKS
+  ========================================================== -->
+  <div class="page" id="p8">
+    <div class="page-head"><span class="page-num">PAGE 08</span><span class="page-title">Monitoring, GitOps &amp; Production EKS</span></div>
+    <p class="page-sub">Keeping a running cluster observable, in sync with Git, and cost-aware.</p>
+    <div class="page-divider"></div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Monitoring</span><span class="zone-tag tag-obs">metrics · logs · alerts</span></div>
+      <div class="diagram-box">Kubernetes → Prometheus → Metrics → Grafana → Dashboards → Alertmanager → Slack / Email / Pager</div>
+      <div class="chip-flow" style="margin-top:12px;">
+        <span class="chip">CPU</span><span class="chip">Memory</span><span class="chip">Pod restarts</span><span class="chip">Node health</span>
+        <span class="chip">Disk</span><span class="chip">Network</span><span class="chip">Request latency</span><span class="chip">Error rate</span>
+      </div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 30th-July Prometheus + Grafana build.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">GitOps — Argo CD</span><span class="zone-tag tag-obs">continuous reconciliation</span></div>
+      <div class="diagram-box">Developer → Git → Git Repository → <span class="hi">Argo CD</span> → Kubernetes Cluster
+
+Desired State (Git)  vs  Actual State (Cluster)  — Argo CD reconciles continuously</div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Git</b> = source of truth&nbsp; · &nbsp;<b>Argo CD</b> = reconcile Git → Cluster</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Kustomize</span><span class="zone-tag tag-obs">template-free config</span></div>
+      <div class="diagram-box">Base YAML → Kustomize → DEV / QA / PROD overlays</div>
+      <div class="grid" style="margin-top:12px;"><div class="cmd"><span class="code">kubectl apply -k .</span><p>Apply a Kustomize overlay directly.</p></div></div>
+      <div class="memory"><span class="m-icon">MEM</span><b>Kustomize</b> = customize YAML without templates</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Cluster diagnostics &amp; cost — from your notes</span><span class="zone-tag tag-obs">extra tooling</span></div>
+      <div class="grid">
+        <div class="cmd notecard"><span class="code">k8sgpt analyze --explain</span><p>K8sGPT — AI-powered scan of the cluster that explains errors (broken images, misconfig) in plain English.</p></div>
+        <div class="cmd notecard"><span class="code">kubecost</span><p>Cost visibility per namespace/deployment — what each workload actually costs to run.</p></div>
+        <div class="cmd notecard"><span class="code">cast.ai</span><p>Automated cluster cost optimization / rightsizing, mentioned alongside kubecost in your practice notes.</p></div>
+      </div>
+      <div class="warn-banner"><span class="wsym">⚠</span><div class="wtext">Your K8sGPT notes file has live OpenAI API keys pasted in plain text — worth rotating those keys and keeping secrets out of note files going forward.</div></div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 29th-July session bundled K8sGPT, Kubecost, Kustomize, cast.ai and Argo CD together — this page mirrors that grouping.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">EKS / AWS Production Flow</span><span class="zone-tag tag-net">edge to disk</span></div>
+      <div class="diagram-box">Users → Route53 → AWS ALB → AWS Load Balancer Controller → Ingress → Service
+      → Deployment → ReplicaSet → Pods → Application
+
+Worker layer:   EKS → Managed Node Groups / EC2 → Nodes → Pods
+Storage layer:  Pod → PVC → StorageClass → EBS CSI Driver → EBS</div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your notes: 21st-July ALB + ACM Ingress-controller project is the EKS-native version of this same path (kOps notes cover the self-managed EC2 version instead).</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 9 — TROUBLESHOOTING MASTER MAP
+  ========================================================== -->
+  <div class="page" id="p9">
+    <div class="page-head"><span class="page-num">PAGE 09</span><span class="page-title">Kubernetes Troubleshooting Master Map</span></div>
+    <p class="page-sub">When something's down — the exact order to check things in.</p>
+    <div class="page-divider"></div>
+
+    <div class="section">
+      <div class="flow-vert">
+        <div class="flow-step hi">APPLICATION DOWN</div><div class="flow-arrow-v">↓</div>
+        <div class="flow-step">kubectl get pods <span class="lbl">— check STATUS</span></div><div class="flow-arrow-v">↓</div>
+        <div class="flow-step">kubectl describe pod <span class="lbl">— check EVENTS</span></div><div class="flow-arrow-v">↓</div>
+        <div class="flow-step">kubectl logs <span class="lbl">— check application output</span></div><div class="flow-arrow-v">↓</div>
+        <div class="flow-step">kubectl get svc <span class="lbl">— check endpoints</span></div><div class="flow-arrow-v">↓</div>
+        <div class="flow-step">kubectl get ingress <span class="lbl">— check networking</span></div><div class="flow-arrow-v">↓</div>
+        <div class="flow-step">kubectl top pod / node <span class="lbl">— check CPU/Memory</span></div>
+      </div>
+      <div class="memory" style="max-width:600px;"><span class="m-icon">MEM</span><b>GET → DESCRIBE → LOGS → EXEC → EVENTS</b></div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Common Pod Failures</span><span class="zone-tag tag-sec">know the states</span></div>
+      <div class="fail-grid">
+        <div class="fail"><div class="fname">Pending</div><p>Scheduling / resource / storage issue.</p></div>
+        <div class="fail"><div class="fname">CrashLoopBackOff</div><p>Application repeatedly crashing.</p></div>
+        <div class="fail"><div class="fname">ImagePullBackOff</div><p>Cannot download the image.</p></div>
+        <div class="fail"><div class="fname">OOMKilled</div><p>Memory limit exceeded.</p></div>
+        <div class="fail"><div class="fname">Evicted</div><p>Node under resource pressure.</p></div>
+        <div class="fail"><div class="fname">CreateContainerConfigError</div><p>ConfigMap/Secret or config problem.</p></div>
+      </div>
+      <div class="notes-tip"><span class="n-icon">✎</span>Your K8sGPT notes deliberately reproduce an <b class="mono">ImagePullBackOff</b> (<span class="mono">nginx:404</span>) to test this exact diagnosis flow.</div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Events</span><span class="zone-tag tag-obs">the cluster's own log</span></div>
+      <div class="grid">
+        <div class="cmd"><span class="code">kubectl get events</span><p>Recent cluster events.</p></div>
+        <div class="cmd"><span class="code">kubectl get events --sort-by='.lastTimestamp'</span><p>Newest events last.</p></div>
+      </div>
+      <div class="memory"><span class="m-icon">MEM</span><b>EVENTS</b> = Kubernetes telling you what happened</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PAGE 10 — INTERVIEW QUICK REVISION SHEET
+  ========================================================== -->
+  <div class="page" id="p10">
+    <div class="page-head"><span class="page-num">PAGE 10</span><span class="page-title">Interview Quick Revision Sheet</span></div>
+    <p class="page-sub">The whole map, compressed to six chains.</p>
+    <div class="page-divider"></div>
+
+    <div class="compare">
+      <div class="ccard"><h4>CLUSTER</h4><div class="cvis">Node
+ ↓
+Pod
+ ↓
+Deployment
+ ↓
+ReplicaSet
+ ↓
+Pods</div></div>
+      <div class="ccard"><h4>NETWORK</h4><div class="cvis">Internet
+ ↓
+Ingress
+ ↓
+Service
+ ↓
+Pod</div></div>
+      <div class="ccard"><h4>CONFIG</h4><div class="cvis">ConfigMap / Secret
+ ↓
+Pod</div></div>
+      <div class="ccard"><h4>STORAGE</h4><div class="cvis">StorageClass
+ ↓
+PV
+ ↓
+PVC
+ ↓
+Pod</div></div>
+      <div class="ccard"><h4>SECURITY</h4><div class="cvis">Authentication
+ ↓
+Authorization
+ ↓
+Admission
+ ↓
+RBAC / Policies</div></div>
+      <div class="ccard"><h4>SCALING</h4><div class="cvis">Metrics
+ ↓
+HPA / VPA / KEDA
+ ↓
+Pods</div></div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Observability, one line each</span></div>
+      <div class="grid">
+        <div class="cmd"><span class="code">Metrics</span><p>→ Prometheus → Grafana.</p></div>
+        <div class="cmd"><span class="code">Logs</span><p>→ your logging platform.</p></div>
+        <div class="cmd"><span class="code">Events</span><p>→ kubectl describe / kubectl get events.</p></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head"><span class="sec-title">Troubleshooting Golden Rule</span></div>
+      <div class="golden">
+        <div class="chain">GET<span class="arr">→</span>DESCRIBE<span class="arr">→</span>LOGS<span class="arr">→</span>EVENTS<span class="arr">→</span>EXEC</div>
+      </div>
+      <div class="diagram-box" style="margin-top:14px;">Then check the chain itself:
+POD → REPLICASET → DEPLOYMENT → SERVICE → ENDPOINTS → INGRESS → DNS / LOAD BALANCER</div>
+    </div>
+  </div>
+
+  <!-- FINAL -->
+  <div class="final">
+    <blockquote>Kubernetes is easier to remember once you can answer, for anything: <span>where does it sit, and what does it reconcile?</span></blockquote>
+    <div class="kv-grid">
+      <div class="kv"><b>kubectl</b> → API Server → Scheduler / Controller → Node → kubelet → Container Runtime → Pod</div>
+      <div class="kv"><b>User request</b> → Load Balancer → Ingress → Service → Pod → Container</div>
+    </div>
+  </div>
+
+  <footer>KUBERNETES MASTER MAP · cross-referenced with K8S_INTERVIEW_NOTES · daily reference &amp; interview revision</footer>
+</div>
+</body>
+</html>
